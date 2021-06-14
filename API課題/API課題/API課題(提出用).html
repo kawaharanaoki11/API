@@ -1,0 +1,231 @@
+!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Map:Geolocation</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      h1 {
+        padding: 0;
+        margin: 0;
+        font-size: 50%;
+      }
+      #mapdoby {
+        height: 540px;
+      }
+      a {
+        color: white !important;
+      }
+    </style>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="https://glitch.com/favicon.ico" />
+
+    <title>Hello world!</title>
+
+    <!-- import the webpage's stylesheet -->
+
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <!-- import the webpage's javascript file -->
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.js"
+      integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body class="m-5">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col" id="mapdoby">
+          <!-- MAP[START] -->
+          <h1>Map:Geolocation</h1>
+          <div id="myMap" style="width:100%;height:100%;float:left;"></div>
+          <!-- MAP[END] -->
+        </div>
+        <div class="col">
+          <!--<button type="button" class="btn btn-dark mb-3" id="RequestAPI">
+            RequestAPI
+          </button>-->
+          <select class="custom-select mb-2" id="genrselect" style="width:50%;">
+            <option selected>--選択してください--</option>
+          </select>
+          <table class="table table-dark">
+            <thead>
+              <tr>
+                <th scope="col">店名</th>
+                <th scope="col">店までの距離</th>
+              </tr>
+            </thead>
+            <tbody id="ResponseBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- this is the start of content -->
+  </body>
+</html>
+
+<script
+  src="https://www.bing.com/api/maps/mapcontrol?callback=GetMap&key=AmpF3Klom04_f7pelOAJGsO3xdan13kYMEkT4a8F9KdOeAmy0MmufnHchWCuJ3zF"
+  async
+  defer
+></script>
+<script src="../js/BmapQuery.js"></script>
+<script>
+  //selectの読込
+  $.ajax({
+    url:
+      "https://webservice.recruit.co.jp/hotpepper/genre/v1/?key=0d65f64d52f3ce74&format=jsonp",
+    type: "GET",
+    dataType: "jsonp",
+    jsonpCallback: "callback"
+  }).done(function(data) {
+    console.log(data);
+    var result = data.results.genre;
+    for (var i = 0; i < result.length; i++) {
+      $("#genrselect").append(
+        '<option value="' + result[i].code + '">' + result[i].name + "</option>"
+      );
+    }
+  });
+  var latitude = "";
+  var longitude = "";
+  //初期MApの表示
+  function GetMap() {
+    //------------------------------------------------------------------------
+    //1. Instance
+    //------------------------------------------------------------------------
+    const map = new Bmap("#myMap");
+
+    //------------------------------------------------------------------------
+    //2. geolocation: Display Map
+    //   map.geolocation(function(data:object){...});
+    //------------------------------------------------------------------------
+    map.geolocation(function(data) {
+      //location
+      const lat = data.coords.latitude;
+      const lon = data.coords.longitude;
+      latitude = data.coords.latitude;
+      longitude = data.coords.longitude;
+
+      //Map
+      map.startMap(lat, lon, "load", 12);
+      //pin
+      map.pin(lat, lon, "black");
+      //console.log(data);
+    });
+  }
+  //複数ピン用の関数
+  function PushPin(lat, lon, apidata) {
+    const map = new Bmap("#myMap");
+    map.geolocation(function(data) {
+      //Map
+      map.startMap(lat, lon, "load", 12);
+      map.pin(lat, lon, "black");
+      var result = apidata.results.shop;
+      for (var i = 0; i < apidata.results.shop.length; i++) {
+        // map.pin(result[i].lat, result[i].lng, "green");
+        map.pinText(result[i].lat, result[i].lng, result[i].name,"subtitle","A");
+      }
+    });
+  }
+  //距離を求める
+  
+  function distance(lat1, lng1, lat2, lng2) {
+    const R = Math.PI / 180;
+    lat1 *= R;
+    lng1 *= R;
+    lat2 *= R;
+    lng2 *= R;
+    return (
+      6371 *
+      Math.acos(
+        Math.cos(lat1) * Math.cos(lat2) * Math.cos(lng2 - lng1) +
+          Math.sin(lat1) * Math.sin(lat2)
+      )
+    );
+  }
+
+  //Chengeイベント
+  $(function() {
+    $(".custom-select").on("change", function() {
+      var genre = $(this).val();
+      $("#ResponseBody")
+        .find("tr")
+        .remove();
+
+      $.ajax({
+        url:
+          "https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key=0d65f64d52f3ce74&lat=" +
+          latitude +
+          "&lng=" +
+          longitude +
+          "&genre=" +
+          genre +
+          "&order=4r&range=3&format=jsonp",
+        type: "GET",
+        dataType: "jsonp",
+        jsonpCallback: "callback"
+      })
+        .done(function(data) {
+          var result = data.results.shop;
+          var length = data.results.shop.length;
+          if (length > 0) {
+            for (var i = 0; i < length; i++) {
+              //r distance =distance(latitude, longitude, result[i].lat, result[i].lng) ;
+              $("#ResponseBody").append(
+                "<tr><td><a href=" +
+                  result[i].coupon_urls.pc +
+                  ">" +
+                  result[i].name +
+                  "</a><td>" +
+                  Math.floor(
+                    distance(
+                      latitude,
+                      longitude,
+                      result[i].lat,
+                      result[i].lng
+                    ) * 1000
+                  ) +
+                  "m</td></tr>"
+              );
+              //nsole.log();
+            }
+          } else {
+            $("#ResponseBody").append(
+              "<tr><td></td><td>データなし<td>-</td></tr>"
+            );
+          }
+          //console.log(data);
+          PushPin(latitude, longitude, data);
+        })
+        .fail(function(data) {
+          var dummy = data; // 失敗時
+        });
+    });
+  });
+</script>
